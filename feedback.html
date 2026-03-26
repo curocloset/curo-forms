@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curo Closet — Feedback Capture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-hover: #222;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --text-muted: #888;
+    --accent: #c4a265;
+    --accent-dim: rgba(196, 162, 101, 0.15);
+    --success: #4ade80;
+    --error: #f87171;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1rem;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+  }
+
+  .header {
+    text-align: center;
+    padding: 1.5rem 0 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+
+  .header p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 200px;
+    line-height: 1.5;
+  }
+
+  textarea.notes {
+    min-height: 80px;
+  }
+
+  .type-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .type-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.6rem 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .type-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+
+  .type-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 0.5rem;
+  }
+
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: none;
+  }
+
+  .status.success {
+    display: block;
+    background: rgba(74, 222, 128, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+  }
+
+  .status.error {
+    display: block;
+    background: rgba(248, 113, 113, 0.1);
+    color: var(--error);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+  }
+
+  .counter {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 0.3rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 480px) {
+    .type-buttons { grid-template-columns: repeat(2, 1fr); }
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Curo Closet — Feedback Capture</h1>
+    <p>Dump convos, transcripts, and notes. COO analyzes later.</p>
+  </div>
+
+  <form id="feedbackForm">
+    <div class="row">
+      <div class="form-group">
+        <label>Who</label>
+        <input type="text" id="personName" placeholder="Name or description" required>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="feedbackDate">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-buttons">
+        <button type="button" class="type-btn active" data-type="text_convo">Text Convo</button>
+        <button type="button" class="type-btn" data-type="call_transcript">Call / Voice</button>
+        <button type="button" class="type-btn" data-type="in_person">In Person</button>
+        <button type="button" class="type-btn" data-type="social_media">Social Media</button>
+        <button type="button" class="type-btn" data-type="other">Other</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Raw Content — paste the full conversation or transcript</label>
+      <textarea id="rawContent" placeholder="Paste the text thread, call transcript, or type up what they said..." required></textarea>
+      <div class="counter" id="charCount">0 characters</div>
+    </div>
+
+    <div class="form-group">
+      <label>Your Quick Take (optional)</label>
+      <textarea class="notes" id="jordanNotes" placeholder="Gut reaction, key insight, anything that stood out..."></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Save Feedback</button>
+    <div class="status" id="status"></div>
+  </form>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://jcsuwvyvqbnjpqnzgfuz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impjc3V3dnl2cWJuanBxbnpnZnV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1MTM3ODAsImV4cCI6MjA3OTA4OTc4MH0.yVKbWlf7CMLdy7T6tYrTvSoFM4jCoU1luE-ihZ9xez8';
+
+  let selectedType = 'text_convo';
+
+  // Set today's date
+  document.getElementById('feedbackDate').valueAsDate = new Date();
+
+  // Type buttons
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedType = btn.dataset.type;
+    });
+  });
+
+  // Character counter
+  document.getElementById('rawContent').addEventListener('input', (e) => {
+    document.getElementById('charCount').textContent = e.target.value.length.toLocaleString() + ' characters';
+  });
+
+  // Submit
+  document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    status.className = 'status';
+    status.style.display = 'none';
+
+    const payload = {
+      person_name: document.getElementById('personName').value.trim(),
+      feedback_date: document.getElementById('feedbackDate').value,
+      feedback_type: selectedType,
+      phase: 'validation_sprint',
+      raw_content: document.getElementById('rawContent').value.trim(),
+      jordan_notes: document.getElementById('jordanNotes').value.trim() || null
+    };
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/closet_raw_feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+      }
+
+      status.className = 'status success';
+      status.textContent = '✓ Saved — ready for COO analysis';
+      status.style.display = 'block';
+
+      // Reset form but keep date and type
+      document.getElementById('personName').value = '';
+      document.getElementById('rawContent').value = '';
+      document.getElementById('jordanNotes').value = '';
+      document.getElementById('charCount').textContent = '0 characters';
+      document.getElementById('personName').focus();
+
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = '✗ Failed: ' + err.message;
+      status.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save Feedback';
+  });
+</script>
+</body>
+</html>
