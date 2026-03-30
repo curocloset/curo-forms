@@ -430,9 +430,8 @@
     group.querySelectorAll('.radio-option').forEach(option => {
       option.addEventListener('click', () => {
         if (isMulti) {
-          option.classList.toggle('selected');
           const cb = option.querySelector('input');
-          cb.checked = !cb.checked;
+          option.classList.toggle('selected', cb.checked);
         } else {
           group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
           option.classList.add('selected');
@@ -449,7 +448,7 @@
 
   function getCheckboxValues(name) {
     const checked = document.querySelectorAll(`input[name="${name}"]:checked`);
-    return Array.from(checked).map(c => c.value).join(', ') || null;
+    return Array.from(checked).map(c => c.value).join('|') || null;
   }
 
   async function submitSurvey() {
