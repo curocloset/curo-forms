@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Closet Capture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0D0D0D; color: #E8E6E3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* Header */
+    .header { position: sticky; top: 0; z-index: 100; background: #0D0D0D; border-bottom: 1px solid #2A2A2A; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+    .header-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .app-title { font-size: 15px; font-weight: 700; white-space: nowrap; }
+    .item-count { color: #606060; font-size: 13px; white-space: nowrap; }
+    .supabase-badge { background: #0D2A1A; color: #4CAF50; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; white-space: nowrap; border: 1px solid #1A4A2A; flex-shrink: 0; }
+    .view-toggle { display: flex; background: #1A1A1A; border-radius: 8px; overflow: hidden; border: 1px solid #2A2A2A; flex-shrink: 0; }
+    .view-btn { background: none; border: none; color: #606060; padding: 7px 14px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; min-height: 34px; }
+    .view-btn.active { background: #4FC3F7; color: #0D0D0D; }
+
+    /* Main */
+    .main { max-width: 480px; margin: 0 auto; padding: 16px 14px 110px; }
+
+    /* Views */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Fields */
+    .field { margin-bottom: 22px; }
+    .field-label { font-size: 11px; font-weight: 700; color: #606060; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    .req { color: #4FC3F7; }
+
+    /* Photo */
+    .photo-area { border: 2px dashed #2A2A2A; border-radius: 12px; overflow: hidden; }
+    .photo-placeholder { display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .photo-btn-label { background: #1A1A1A; border: 1px solid #2A2A2A; color: #E8E6E3; padding: 12px 22px; border-radius: 10px; cursor: pointer; font-size: 15px; display: inline-block; min-height: 48px; display: flex; align-items: center; gap: 8px; }
+    input[type="file"] { display: none; }
+    .photo-preview { position: relative; }
+    .photo-preview img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+    .photo-actions { display: flex; gap: 8px; padding: 10px; background: #141414; }
+    .photo-action-btn { flex: 1; background: #222; border: 1px solid #2A2A2A; color: #E8E6E3; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; min-height: 44px; }
+    .photo-action-btn.remove { color: #FF5252; }
+
+    /* Text inputs */
+    .text-input { width: 100%; background: #141414; border: 1px solid #2A2A2A; color: #E8E6E3; padding: 13px 14px; border-radius: 10px; font-size: 15px; min-height: 48px; outline: none; transition: border-color 0.15s; }
+    .text-input:focus { border-color: #4FC3F7; }
+    .text-input::placeholder { color: #404040; }
+
+    /* Chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { background: #141414; border: 1px solid #2A2A2A; color: #808080; padding: 9px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; user-select: none; min-height: 38px; display: flex; align-items: center; white-space: nowrap; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .chip.selected { background: #0D2A3D; border-color: #4FC3F7; color: #4FC3F7; font-weight: 700; }
+
+    /* Colors */
+    .color-section { }
+    .color-group-label { font-size: 10px; font-weight: 700; color: #505050; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; margin-top: 12px; }
+    .color-group-label:first-child { margin-top: 0; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+    .swatch { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; border: 2px solid #333; position: relative; flex-shrink: 0; transition: transform 0.1s, border-color 0.1s; -webkit-tap-highlight-color: transparent; }
+    .swatch.selected { border-color: #4FC3F7 !important; transform: scale(1.12); box-shadow: 0 0 0 2px #4FC3F7; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); background: #0D2A1A; color: #4CAF50; border: 1px solid #1A4A2A; padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 1000; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
+    .toast.error { background: #2A0D0D; color: #FF5252; border-color: #4A1A1A; }
+    .toast.show { opacity: 1; }
+
+    /* Save bar */
+    .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0D0D0D; border-top: 1px solid #2A2A2A; padding: 12px 14px; z-index: 100; }
+    .save-bar-inner { max-width: 480px; margin: 0 auto; }
+    .save-btn { width: 100%; background: #4FC3F7; color: #0A0A0A; border: none; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; min-height: 52px; transition: opacity 0.2s; letter-spacing: -0.2px; }
+    .save-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .cancel-btn { width: 100%; background: #1A1A1A; color: #808080; border: 1px solid #2A2A2A; padding: 11px; border-radius: 10px; font-size: 14px; cursor: pointer; min-height: 44px; margin-top: 8px; }
+
+    /* List */
+    .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .list-title { font-size: 14px; color: #808080; font-weight: 600; }
+    .list-actions { display: flex; gap: 8px; }
+    .list-action-btn { background: #141414; border: 1px solid #2A2A2A; color: #A0A0A0; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; min-height: 38px; }
+    .list-action-btn:active { background: #222; }
+    .empty-state { text-align: center; color: #404040; padding: 60px 20px; font-size: 15px; line-height: 1.6; }
+
+    .item-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 12px; display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+    .item-thumb { width: 62px; height: 62px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; }
+    .item-thumb-placeholder { width: 62px; height: 62px; border-radius: 8px; background: #1E1E1E; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid #2A2A2A; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-num { font-size: 10px; color: #505050; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .item-desc { font-size: 14px; font-weight: 700; color: #E8E6E3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta { font-size: 12px; color: #606060; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-btns { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .item-btn { background: #1E1E1E; border: 1px solid #2A2A2A; color: #A0A0A0; padding: 7px 11px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; min-height: 34px; min-width: 44px; }
+    .item-btn.delete { color: #FF5252; border-color: #3A1A1A; }
+
+    .loading { text-align: center; color: #404040; padding: 50px; font-size: 14px; }
+
+    .type-placeholder { color: #404040; font-size: 13px; padding: 4px 0; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="app-title">Closet Capture</span>
+    <span class="item-count" id="itemCount">0 items</span>
+    <span class="supabase-badge">&#9679; Supabase</span>
+  </div>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btnForm" onclick="switchView('form')">Add</button>
+    <button class="view-btn" id="btnList" onclick="switchView('list')">List</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- FORM VIEW -->
+  <div class="view active" id="viewForm">
+
+    <!-- Photo -->
+    <div class="field">
+      <div class="field-label">Photo</div>
+      <div class="photo-area" id="photoArea">
+        <div class="photo-placeholder" id="photoPlaceholder">
+          <label class="photo-btn-label" for="photoInput">
+            <span>&#128247;</span> Take Photo
+          </label>
+          <input type="file" id="photoInput" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-preview" id="photoPreview" style="display:none">
+          <img id="photoImg" src="" alt="Preview">
+          <div class="photo-actions">
+            <button class="photo-action-btn" onclick="retakePhoto()">&#8635; Retake</button>
+            <button class="photo-action-btn remove" onclick="removePhoto()">&#10005; Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="field">
+      <div class="field-label">Brief Description</div>
+      <input type="text" class="text-input" id="fieldDescription" placeholder="e.g. navy henley, brown boots...">
+    </div>
+
+    <!-- Category -->
+    <div class="field">
+      <div class="field-label">Category <span class="req">*</span></div>
+      <div class="chips" id="categoryChips"></div>
+    </div>
+
+    <!-- Type -->
+    <div class="field">
+      <div class="field-label">Type <span class="req">*</span></div>
+      <div class="chips" id="typeChips"><div class="type-placeholder">Select a category first</div></div>
+    </div>
+
+    <!-- Colors -->
+    <div class="field">
+      <div class="field-label">Colors</div>
+      <div class="color-section" id="colorSwatches"></div>
+    </div>
+
+    <!-- Material -->
+    <div class="field">
+      <div class="field-label">Material</div>
+      <div class="chips" id="materialChips"></div>
+    </div>
+
+    <!-- Seasons -->
+    <div class="field">
+      <div class="field-label">Seasons</div>
+      <div class="chips" id="seasonChips"></div>
+    </div>
+
+    <!-- Formality -->
+    <div class="field">
+      <div class="field-label">Formality</div>
+      <div class="chips" id="formalityChips"></div>
+    </div>
+
+    <!-- Layerability -->
+    <div class="field">
+      <div class="field-label">Layerability</div>
+      <div class="chips" id="layerabilityChips"></div>
+    </div>
+
+    <!-- Brand -->
+    <div class="field">
+      <div class="field-label">Brand <span style="color:#404040;font-weight:500;text-transform:none;font-size:11px">(optional)</span></div>
+      <input type="text" class="text-input" id="fieldBrand" placeholder="e.g. Levi's, Patagonia...">
+    </div>
+
+    <!-- Notes -->
+    <div class="field">
+      <div class="field-label">Notes <span style="color:#404040;font-weight:500;text-transform:none;font-size:11px">(optional)</span></div>
+      <input type="text" class="text-input" id="fieldNotes" placeholder="Any details...">
+    </div>
+
+  </div>
+
+  <!-- LIST VIEW -->
+  <div class="view" id="viewList">
+    <div class="list-header">
+      <span class="list-title" id="listTitle">All Items</span>
+      <div class="list-actions">
+        <button class="list-action-btn" onclick="exportCSV()">CSV</button>
+        <button class="list-action-btn" onclick="exportPhotos()">Photos</button>
+      </div>
+    </div>
+    <div id="itemList"><div class="loading">Loading...</div></div>
+  </div>
+
+</div>
+
+<!-- Save bar -->
+<div class="save-bar" id="saveBar">
+  <div class="save-bar-inner">
+    <button class="save-btn" id="saveBtn" onclick="saveItem()">Save Item</button>
+    <button class="cancel-btn" id="cancelBtn" style="display:none" onclick="cancelEdit()">Cancel Edit</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://jcsuwvyvqbnjpqnzgfuz.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impjc3V3dnl2cWJuanBxbnpnZnV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1MTM3ODAsImV4cCI6MjA3OTA4OTc4MH0.yVKbWlf7CMLdy7T6tYrTvSoFM4jCoU1luE-ihZ9xez8';
+const TABLE = 'closet_spike_items';
+const BASE_HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': ANON_KEY,
+  'Authorization': 'Bearer ' + ANON_KEY
+};
+
+// --- State ---
+let items = [];
+let currentView = 'form';
+let editingId = null;
+let photoData = null;
+let thumbnailData = null;
+let photoChanged = false;
+
+// --- Data definitions ---
+const TYPE_OPTIONS = {
+  top: ['t-shirt','henley','polo','button-down-shirt','oxford-shirt','camp-collar-shirt','flannel-shirt','dress-shirt','sweater','crewneck-sweatshirt','hoodie','long-sleeve-tee','tank-top','thermal','rugby-shirt','vest-top'],
+  bottom: ['jeans','chinos','dress-pants','joggers','shorts','cargo-pants','sweatpants','corduroys','linen-pants','athletic-shorts'],
+  outerwear: ['bomber-jacket','denim-jacket','leather-jacket','rain-jacket','parka','peacoat','overcoat','blazer','sport-coat','fleece-jacket','puffer-jacket','windbreaker','cardigan','vest','hoodie-zip'],
+  footwear: ['sneakers','boots','chelsea-boots','dress-shoes','loafers','sandals','hiking-boots','running-shoes','slip-ons','boat-shoes','work-boots'],
+  accessory: ['watch','belt','hat','baseball-cap','beanie','scarf','sunglasses','tie','pocket-square','bag','backpack','wallet','bracelet','necklace','gloves']
+};
+
+const CATEGORIES = [
+  {value:'top',label:'Top'},{value:'bottom',label:'Bottom'},
+  {value:'outerwear',label:'Outer'},{value:'footwear',label:'Footwear'},
+  {value:'accessory',label:'Acc.'}
+];
+
+const COLOR_GROUPS = {
+  'Neutrals': [
+    {name:'white',hex:'#FFFFFF'},{name:'off-white',hex:'#FAF9F6'},{name:'cream',hex:'#FFFDD0'},
+    {name:'ivory',hex:'#FFFFF0'},{name:'beige',hex:'#D4C5A9'},{name:'tan',hex:'#D2B48C'},
+    {name:'khaki',hex:'#BDB76B'},{name:'light-gray',hex:'#C8C8C8'},{name:'heather-gray',hex:'#9E9E9E'},
+    {name:'gray',hex:'#808080'},{name:'charcoal',hex:'#36454F'},{name:'black',hex:'#1A1A1A'}
+  ],
+  'Browns': [
+    {name:'camel',hex:'#C19A6B'},{name:'cognac',hex:'#9A463D'},
+    {name:'brown',hex:'#795548'},{name:'chocolate',hex:'#3E2723'}
+  ],
+  'Warm': [
+    {name:'red',hex:'#D32F2F'},{name:'burgundy',hex:'#800020'},{name:'maroon',hex:'#5D0015'},
+    {name:'coral',hex:'#FF7F50'},{name:'salmon',hex:'#FA8072'},{name:'pink',hex:'#E91E90'},
+    {name:'orange',hex:'#FF6D00'},{name:'rust',hex:'#B7410E'},{name:'mustard',hex:'#C6A300'},
+    {name:'yellow',hex:'#F9D71C'},{name:'gold',hex:'#CFB53B'}
+  ],
+  'Cool': [
+    {name:'olive',hex:'#556B2F'},{name:'army-green',hex:'#4B5320'},{name:'forest-green',hex:'#228B22'},
+    {name:'green',hex:'#4CAF50'},{name:'sage',hex:'#9CAF88'},{name:'mint',hex:'#98FFB3'},
+    {name:'teal',hex:'#008080'},{name:'navy',hex:'#1B2A4A'},{name:'indigo',hex:'#3F51B5'},
+    {name:'blue',hex:'#2196F3'},{name:'royal-blue',hex:'#2962FF'},{name:'cobalt',hex:'#0047AB'},
+    {name:'light-blue',hex:'#90CAF9'},{name:'sky-blue',hex:'#87CEEB'},{name:'purple',hex:'#7B1FA2'},
+    {name:'lavender',hex:'#B39DDB'}
+  ]
+};
+
+const MATERIALS = ['cotton','cotton-blend','denim','jersey','linen','chambray','flannel','wool','wool-blend','merino','cashmere','fleece','tweed','corduroy','polyester','nylon','synthetic-blend','leather','suede','canvas','silk'];
+const SEASONS = [{value:'spring',label:'spring \uD83C\uDF31'},{value:'summer',label:'summer \u2600\uFE0F'},{value:'fall',label:'fall \uD83C\uDF42'},{value:'winter',label:'winter \u2744\uFE0F'}];
+const FORMALITY = ['casual','smart-casual','business-casual','formal'];
+const LAYERABILITY = ['base','mid','outer','n-a'];
+
+// --- Helpers ---
+function toLabel(str) {
+  return str.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function padNum(n) {
+  return String(n).padStart(2,'0');
+}
+
+function makeSlug(str) {
+  return (str||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'item';
+}
+
+// --- Init ---
+function init() {
+  buildCategoryChips();
+  buildSimpleChips('materialChips', MATERIALS, false);
+  buildSimpleChips('seasonChips', SEASONS.map(s=>s.value), true, SEASONS.map(s=>s.label));
+  buildSimpleChips('formalityChips', FORMALITY, false);
+  buildSimpleChips('layerabilityChips', LAYERABILITY, false);
+  buildColorSwatches();
+  document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
+  loadItems();
+}
+
+// --- Chip builders ---
+function buildCategoryChips() {
+  const el = document.getElementById('categoryChips');
+  el.innerHTML = CATEGORIES.map(c =>
+    `<div class="chip" data-value="${c.value}" onclick="selectCategory(this,'${c.value}')">${c.label}</div>`
+  ).join('');
+}
+
+function buildSimpleChips(containerId, values, multi, labels) {
+  const el = document.getElementById(containerId);
+  const multiStr = multi ? 'true' : 'false';
+  el.innerHTML = values.map((v,i) => {
+    const lbl = labels ? labels[i] : toLabel(v);
+    return `<div class="chip" data-value="${v}" onclick="toggleChip(this,${multiStr})">${lbl}</div>`;
+  }).join('');
+}
+
+function buildTypeChips(category) {
+  const el = document.getElementById('typeChips');
+  const opts = TYPE_OPTIONS[category] || [];
+  if (!opts.length) { el.innerHTML = '<div class="type-placeholder">No types for this category</div>'; return; }
+  el.innerHTML = opts.map(v =>
+    `<div class="chip" data-value="${v}" onclick="toggleChip(this,false)">${toLabel(v)}</div>`
+  ).join('');
+}
+
+function buildColorSwatches() {
+  const el = document.getElementById('colorSwatches');
+  let html = '';
+  for (const [group, colors] of Object.entries(COLOR_GROUPS)) {
+    html += `<div class="color-group-label">${group}</div><div class="swatches">`;
+    html += colors.map(c =>
+      `<div class="swatch" style="background:${c.hex}" data-name="${c.name}" title="${c.name}" onclick="toggleSwatch(this)"></div>`
+    ).join('');
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// --- Chip interactions ---
+function selectCategory(el, value) {
+  document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  // Clear type selection when category changes
+  document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.remove('selected'));
+  buildTypeChips(value);
+}
+
+function toggleChip(el, multi) {
+  if (!multi) {
+    el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  }
+  el.classList.toggle('selected');
+}
+
+function toggleSwatch(el) {
+  el.classList.toggle('selected');
+}
+
+function getSingle(containerId) {
+  const sel = document.querySelector(`#${containerId} .chip.selected`);
+  return sel ? sel.dataset.value : '';
+}
+
+function getMulti(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c => c.dataset.value);
+}
+
+function getSelectedColors() {
+  return [...document.querySelectorAll('.swatch.selected')].map(s => s.dataset.name);
+}
+
+// --- Photo ---
+function handlePhotoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  compressImage(file).then(({photo, thumb}) => {
+    photoData = photo;
+    thumbnailData = thumb;
+    photoChanged = true;
+    document.getElementById('photoImg').src = thumb;
+    document.getElementById('photoPlaceholder').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'block';
+  });
+}
+
+function compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ photo: resizeCanvas(img,1200,0.7), thumb: resizeCanvas(img,200,0.7) });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function resizeCanvas(img, maxPx, quality) {
+  let w = img.width, h = img.height;
+  if (w > maxPx || h > maxPx) {
+    if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+    else { w = Math.round(w * maxPx / h); h = maxPx; }
+  }
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', quality);
+}
+
+function retakePhoto() {
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoInput').click();
+}
+
+function removePhoto() {
+  photoData = null;
+  thumbnailData = null;
+  photoChanged = true;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoPlaceholder').style.display = 'flex';
+  document.getElementById('photoPreview').style.display = 'none';
+}
+
+// --- Supabase: load ---
+async function loadItems() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE}?order=item_number.asc&select=id,item_number,description,category,type,colors,material,seasons,formality,layerability,brand,notes,thumbnail,created_at`,
+      { headers: BASE_HEADERS }
+    );
+    if (!res.ok) throw new Error(res.statusText);
+    items = await res.json();
+    updateCount();
+    renderList();
+  } catch(err) {
+    showToast('Failed to load items', true);
+    document.getElementById('itemList').innerHTML = '<div class="loading">Could not load items</div>';
+  }
+}
+
+// --- Supabase: save ---
+async function saveItem() {
+  const category = getSingle('categoryChips');
+  const type = getSingle('typeChips');
+
+  if (!category) { showToast('Category is required', true); return; }
+  if (!type) { showToast('Type is required', true); return; }
+
+  const payload = {
+    description: document.getElementById('fieldDescription').value.trim() || null,
+    category,
+    type,
+    colors: getSelectedColors().join('|') || null,
+    material: getSingle('materialChips') || null,
+    seasons: getMulti('seasonChips').join('|') || null,
+    formality: getSingle('formalityChips') || null,
+    layerability: getSingle('layerabilityChips') || null,
+    brand: document.getElementById('fieldBrand').value.trim() || null,
+    notes: document.getElementById('fieldNotes').value.trim() || null
+  };
+
+  // Include photo only if it changed or this is a new item
+  if (!editingId || photoChanged) {
+    payload.photo = photoData || null;
+    payload.thumbnail = thumbnailData || null;
+  }
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving to database...';
+  btn.disabled = true;
+
+  try {
+    let res;
+    if (editingId) {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${editingId}`, {
+        method: 'PATCH',
+        headers: { ...BASE_HEADERS, 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+        method: 'POST',
+        headers: { ...BASE_HEADERS, 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(errBody || res.statusText);
+    }
+
+    const wasEditing = !!editingId;
+    showToast(wasEditing ? 'Updated!' : 'Saved!');
+    resetForm();
+    await loadItems();
+    if (wasEditing) switchView('list');
+
+  } catch(err) {
+    showToast('Error: ' + (err.message || 'Unknown'), true);
+  } finally {
+    btn.textContent = editingId ? 'Update Item' : 'Save Item';
+    btn.disabled = false;
+  }
+}
+
+// --- Supabase: delete ---
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: BASE_HEADERS
+    });
+    if (!res.ok) throw new Error(res.statusText);
+    showToast('Deleted');
+    await loadItems();
+  } catch(err) {
+    showToast('Delete failed', true);
+  }
+}
+
+// --- Edit ---
+function editItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  editingId = id;
+  photoChanged = false;
+
+  document.getElementById('fieldDescription').value = item.description || '';
+  document.getElementById('fieldBrand').value = item.brand || '';
+  document.getElementById('fieldNotes').value = item.notes || '';
+
+  // Category
+  document.querySelectorAll('#categoryChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === item.category);
+  });
+  if (item.category) buildTypeChips(item.category);
+
+  // Type (after typeChips rebuild)
+  setTimeout(() => {
+    document.querySelectorAll('#typeChips .chip').forEach(c => {
+      c.classList.toggle('selected', c.dataset.value === item.type);
+    });
+  }, 30);
+
+  // Colors
+  const colorsArr = item.colors ? item.colors.split('|') : [];
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.classList.toggle('selected', colorsArr.includes(s.dataset.name));
+  });
+
+  // Material
+  document.querySelectorAll('#materialChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === item.material);
+  });
+
+  // Seasons
+  const seasonsArr = item.seasons ? item.seasons.split('|') : [];
+  document.querySelectorAll('#seasonChips .chip').forEach(c => {
+    c.classList.toggle('selected', seasonsArr.includes(c.dataset.value));
+  });
+
+  // Formality
+  document.querySelectorAll('#formalityChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === item.formality);
+  });
+
+  // Layerability
+  document.querySelectorAll('#layerabilityChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === item.layerability);
+  });
+
+  // Photo preview (from cached thumbnail)
+  if (item.thumbnail) {
+    thumbnailData = item.thumbnail;
+    photoData = null; // full photo not preloaded
+    document.getElementById('photoImg').src = item.thumbnail;
+    document.getElementById('photoPlaceholder').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'block';
+  } else {
+    removePhoto();
+    photoChanged = false; // reset — remove was triggered by us, not user
+  }
+
+  document.getElementById('saveBtn').textContent = 'Update Item';
+  document.getElementById('cancelBtn').style.display = 'block';
+
+  switchView('form');
+  window.scrollTo(0,0);
+}
+
+function cancelEdit() {
+  editingId = null;
+  resetForm();
+}
+
+function resetForm() {
+  editingId = null;
+  photoData = null;
+  thumbnailData = null;
+  photoChanged = false;
+  document.getElementById('fieldDescription').value = '';
+  document.getElementById('fieldBrand').value = '';
+  document.getElementById('fieldNotes').value = '';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  document.getElementById('typeChips').innerHTML = '<div class="type-placeholder">Select a category first</div>';
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoPlaceholder').style.display = 'flex';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('saveBtn').textContent = 'Save Item';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+// --- List render ---
+function renderList() {
+  const el = document.getElementById('itemList');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state">No items yet.<br>Tap <strong>Add</strong> to log your first garment.</div>';
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const num = padNum(item.item_number);
+    const thumbEl = item.thumbnail
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="">`
+      : `<div class="item-thumb-placeholder">&#128085;</div>`;
+    const meta = [item.material, item.formality, item.brand].filter(Boolean).join(' &middot; ');
+    return `
+      <div class="item-card">
+        ${thumbEl}
+        <div class="item-info">
+          <div class="item-num">#${num} &middot; ${item.category||''}${item.type ? ' &middot; '+item.type : ''}</div>
+          <div class="item-desc">${item.description || '(no description)'}</div>
+          ${meta ? `<div class="item-meta">${meta}</div>` : ''}
+        </div>
+        <div class="item-btns">
+          <button class="item-btn" onclick="editItem('${item.id}')">Edit</button>
+          <button class="item-btn delete" onclick="deleteItem('${item.id}')">Del</button>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('listTitle').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+}
+
+function updateCount() {
+  document.getElementById('itemCount').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+}
+
+// --- View switch ---
+function switchView(view) {
+  currentView = view;
+  document.getElementById('viewForm').classList.toggle('active', view === 'form');
+  document.getElementById('viewList').classList.toggle('active', view === 'list');
+  document.getElementById('btnForm').classList.toggle('active', view === 'form');
+  document.getElementById('btnList').classList.toggle('active', view === 'list');
+  document.getElementById('saveBar').style.display = view === 'form' ? 'block' : 'none';
+}
+
+// --- CSV export ---
+function exportCSV() {
+  if (!items.length) { showToast('No items to export', true); return; }
+  const headers = ['filename','category','type','colors','material','seasons','formality','layerability','brand','notes'];
+  const rows = items.map(item => {
+    const num = padNum(item.item_number);
+    const slug = makeSlug(item.description || item.type);
+    const filename = `${num}_${item.category||'item'}_${slug}.jpg`;
+    return [filename, item.category, item.type, item.colors, item.material,
+            item.seasons, item.formality, item.layerability, item.brand, item.notes]
+      .map(v => JSON.stringify(v != null ? String(v) : '')).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  downloadBlob('closet-items.csv', 'text/csv', csv);
+  showToast('CSV downloaded');
+}
+
+// --- Photo export ---
+async function exportPhotos() {
+  const withPhotos = items.filter(i => i.thumbnail);
+  if (!withPhotos.length) { showToast('No photos to export', true); return; }
+  showToast(`Downloading ${withPhotos.length} photo${withPhotos.length!==1?'s':''}...`);
+  for (let i = 0; i < withPhotos.length; i++) {
+    const item = withPhotos[i];
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${item.id}&select=item_number,category,description,type,photo`,
+        { headers: BASE_HEADERS }
+      );
+      const [full] = await res.json();
+      if (full && full.photo) {
+        const num = padNum(full.item_number);
+        const slug = makeSlug(full.description || full.type);
+        const filename = `${num}_${full.category||'item'}_${slug}.jpg`;
+        downloadDataUrl(filename, full.photo);
+      }
+    } catch(e) { /* skip failed */ }
+    if (i < withPhotos.length - 1) await delay(400);
+  }
+}
+
+// --- Download helpers ---
+function downloadBlob(name, type, content) {
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadDataUrl(name, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// --- Toast ---
+let toastTimer;
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (isError ? ' error' : '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// --- Start ---
+init();
+</script>
+</body>
+</html>
